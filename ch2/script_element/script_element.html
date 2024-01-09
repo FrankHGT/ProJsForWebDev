@@ -1,0 +1,55 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试script元素</title>
+    <!-- 虽然标准规定async之间没有顺序，但是实际还是按序的
+        可能是网络加载的问题，如果是网络加载的js，第1个比第2个慢
+        不会因为类似defer的顺序限制阻塞第2个脚本执行 -->
+    <script async src="async1.js"></script>
+    <script async src="async2.js"></script>
+    <!-- 明确标准资源预加载之后，确实执行会提前（顺序还是不确定的），看来确实与动态加载耗时有关 -->
+    <link rel="preload" href="dynamic_loaded.js" as="script">
+    <!-- Q: 测试起来动态添加的js会在body onload之前，defer之后执行？搞清楚 -->
+    <!-- A:由于 dynamic_loaded.js 是在 dynamic_load_js.js 中[!!!异步]加载的，
+        浏览器会[!!!并行加载和解析文档]，这意味着可能在下载 dynamic_loaded.js 的同时，浏览器也在解析 <body>。 -->
+    <script src="dynamic_load_js.js"></script>
+</head>
+<!-- onload中的js代码会在页面完全加载完(包括所有图片、样式表、脚本文件等)后执行。
+    这个时刻是DOM内容已经加载完并且所有外部资源也已经加载完成后，甚至可能会在defer脚本执行之后 -->
+<body onload="sayHi();sayScript();sayHiFromOutside()">
+    <!-- deferlog.js will defer after noDeferLog -->
+    <script defer src="deferlog.js"></script>
+    <script defer>
+        function deferLogInline() {
+            console.log("inline js code is not defered");
+        }
+        deferLogInline();
+    </script>
+    <script>
+        function noDeferLog() {
+            console.log("noDeferLog");
+        }
+        noDeferLog();
+    </script>
+    <script>
+        function sayHi() {
+            console.log("Hi!");
+        }
+        function sayScript() {
+            // 不能在js代码中出现<\/script>标签，会导致<script>标签提前关闭
+            // 可以使用转义
+            // console.log("<\/script>");
+            // Q:但是<script>标签可以正常输出，这是为什么?
+            // A:因为只要没有出现闭合标签，这个区间内的代码就会被视为js代码，而不是html代码
+            //   所以html根本不理这个假标签
+            console.log("<script>");
+        }
+    </script>
+    <script src="example.js">
+        // 这里的script标签是src属性，所以不会执行里面的代码
+        sayHi();
+    </script>
+    <h1>This is a h1 line!</h1>
+</body>
+</html>
